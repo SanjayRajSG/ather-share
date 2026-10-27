@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AtherShare — P2P EV Community Charging & Emergency SOS Network</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ather: {
+              bg: '#0A0D10',
+              card: '#13181D',
+              panel: '#1A2129',
+              mint: '#00D59D',
+              mintDark: '#00A87B',
+              danger: '#FF3B30',
+              warning: '#FF9F0A',
+              grid: '#38BDF8'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: #0A0D10;
+      color: #F3F4F6;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0A0D10;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1F2937;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00D59D;
+    }
+
+    /* Radar Sweep Animation */
+    @keyframes radarSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .radar-sweep {
+      background: conic-gradient(from 0deg, rgba(0, 213, 157, 0.38) 0deg, rgba(0, 213, 157, 0.0) 90deg, transparent 360deg);
+      animation: radarSpin 4s linear infinite;
+    }
+    .radar-sweep-sos {
+      background: conic-gradient(from 0deg, rgba(255, 59, 48, 0.45) 0deg, rgba(255, 59, 48, 0.0) 95deg, transparent 360deg);
+      animation: radarSpin 2.2s linear infinite;
+    }
+
+    /* Pulse ring for markers */
+    @keyframes pulseRing {
+      0% { transform: scale(0.8); opacity: 0.9; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .pulse-ring::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 9999px;
+      border: 2px solid currentColor;
+      animation: pulseRing 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+
+    /* Custom Range Slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 999px;
+      background: #1F2937;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -5px;
+      background-color: #00D59D;
+      height: 18px;
+      width: 18px;
+      border-radius: 999px;
+      border: 2px solid #0A0D10;
+      box-shadow: 0 0 10px rgba(0, 213, 157, 0.8);
+    }
+
+    /* Glowing Mint Border */
+    .mint-glow {
+      box-shadow: 0 0 25px -5px rgba(0, 213, 157, 0.35);
+    }
+    .danger-glow {
+      box-shadow: 0 0 28px -4px rgba(255, 59, 48, 0.5);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-ather-mint selection:text-black">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 backdrop-blur-xl bg-ather-bg/90 border-b border-gray-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-ather-mint/15 border border-ather-mint/50 flex items-center justify-center text-ather-mint shadow-lg shadow-ather-mint/10">
+          <i class="fa-solid fa-bolt-lightning text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold tracking-tight text-lg text-white">ATHER<span class="text-ather-mint">SHARE</span></span>
+            <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-ather-mint/15 text-ather-mint border border-ather-mint/30">P2P Grid</span>
+          </div>
+          <p class="text-xs text-gray-400 hidden sm:block">Community Rescue & Home Charger Sharing Network • Bengaluru</p>
+        </div>
+      </div>
+
+      <!-- 3-Mode Switcher -->
+      <div class="flex items-center bg-ather-card p-1 rounded-xl border border-gray-800">
+        <button id="tab-rider" onclick="switchMode('rider')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-ather-mint text-black shadow">
+          <i class="fa-solid fa-motorcycle"></i>
+          <span>Rider SOS</span>
+        </button>
+        <button id="tab-host" onclick="switchMode('host')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-gray-400 hover:text-white">
+          <i class="fa-solid fa-plug-circle-check"></i>
+          <span>Host Mode</span>
+          <span id="host-ping-badge" class="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-ather-danger text-white">2</span>
+        </button>
+        <button id="tab-dev" onclick="switchMode('dev')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-gray-400 hover:text-white">
+          <i class="fa-solid fa-wallet text-ather-mint"></i>
+          <span>Dev Wallet</span>
+          <span id="nav-dev-balance" class="font-mono text-xs px-1.5 py-0.5 rounded bg-ather-mint/20 text-ather-mint border border-ather-mint/30">₹140</span>
+        </button>
+      </div>
+
+      <!-- Sound & Active Session Pill -->
+      <div class="hidden lg:flex items-center gap-3">
+        <div class="px-3 py-1.5 rounded-xl bg-ather-card border border-gray-800 flex items-center gap-2 text-xs">
+          <span class="w-2 h-2 rounded-full bg-ather-mint animate-ping"></span>
+          <span class="text-gray-400">Tariff:</span>
+          <span class="font-mono font-bold text-white">₹150/session</span>
+          <span class="text-[11px] text-ather-mint font-mono">(₹140 Host + ₹10 Dev)</span>
+        </div>
+        <button id="sound-btn" onclick="toggleSound()" class="p-2.5 rounded-xl bg-ather-card border border-gray-800 text-gray-300 hover:text-ather-mint hover:border-ather-mint/40 transition" title="Toggle Radar Audio">
+          <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CRITICAL LOW BATTERY EMERGENCY BANNER -->
+  <div id="critical-banner" class="bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90 border-b border-red-500/40 px-4 py-2.5 transition-all">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+      <div class="flex items-center gap-2.5">
+        <span class="px-2 py-0.5 rounded bg-red-600 text-white font-mono font-bold uppercase text-[11px] animate-pulse">CRITICAL SoC</span>
+        <span class="text-red-100 font-medium">Battery at <strong id="banner-soc" class="font-mono underline">7%</strong> (~<span id="banner-range">5.2</span> km left). Nearest public Ather Grid is 6.8 km away (Out of safe range).</span>
+      </div>
+      <button onclick="triggerEmergencySOS()" class="px-3 py-1 rounded-lg bg-white text-red-700 font-bold text-xs hover:bg-red-100 transition flex items-center gap-1.5 shadow">
+        <i class="fa-solid fa-tower-broadcast"></i> Ping Nearby Home Chargers Now
+      </button>
+    </div>
+  </div>
+
+  <!-- ACTIVE LIVE CHARGING BAR (Hidden until a ₹150 payment is completed) -->
+  <div id="active-charging-bar" class="hidden bg-ather-mint/15 border-b border-ather-mint/40 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-ather-mint text-black flex items-center justify-center font-bold animate-pulse">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono uppercase tracking-wider text-ather-mint font-bold">LIVE P2P CHARGING SESSION ACTIVE</span>
+            <span id="active-session-host" class="text-xs bg-black/50 px-2 py-0.5 rounded text-white font-medium">Host: Karthik Rao</span>
+          </div>
+          <p class="text-xs text-gray-300">₹150 Paid via AtherPay Split (<span class="text-ather-mint">₹140 Host Credited</span> • <span class="text-sky-400">₹10 Dev Commission Credited</span>)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right font-mono">
+          <div class="text-xs text-gray-400">Energy Added / Timer</div>
+          <div class="text-sm font-bold text-ather-mint"><span id="charge-kwh">0.42</span> kWh • <span id="charge-timer">00:45</span></div>
+        </div>
+        <button onclick="stopChargingSession()" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500 hover:text-white text-xs font-semibold transition">
+          Finish Session
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: RIDER SOS & PROXIMITY RADAR MODE   -->
+    <!-- ========================================== -->
+    <section id="view-rider" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: TELEMETRY, SCOOTER SELECTOR & SOS CONTROLS (4 Cols) -->
+        <div class="lg:col-span-4 space-y-5">
+
+          <!-- Scooter Telemetry Card -->
+          <div id="telemetry-card" class="bg-ather-card rounded-2xl p-5 border border-red-500/40 danger-glow transition-all">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <span class="text-[11px] font-mono uppercase tracking-wider text-gray-400">MY ATHER TELEMETRY</span>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                  <span id="selected-model-title">Ather 450X (Gen 3)</span>
+                  <span class="text-xs font-mono px-2 py-0.5 rounded bg-gray-800 text-ather-mint">KA-01-JS-4509</span>
+                </h2>
+              </div>
+              <div id="soc-badge" class="px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-mono text-xs font-bold">
+                SOS READY
+              </div>
+            </div>
+
+            <!-- Scooter Model Selector Pills -->
+            <div class="mb-4">
+              <label class="text-xs text-gray-400 block mb-2">Select Your Ather Scooter Model:</label>
+              <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2" id="model-buttons">
+                <button onclick="selectModel('Ather 450X', 0.85)" class="model-btn px-3 py-2 rounded-xl text-xs font-semibold border border-ather-mint bg-ather-mint/15 text-ather-mint text-left flex items-center justify-between">
+                  <span>450X</span>
+                  <i class="fa-solid fa-check text-[10px]"></i>
+                </button>
+                <button onclick="selectModel('Ather 450 Apex', 0.90)" class="model-btn px-3 py-2 rounded-xl text-xs font-semibold border border-gray-800 bg-ather-panel text-gray-300 hover:border-gray-700 text-left flex items-center justify-between">
+                  <span>450 Apex</span>
+                </button>
+                <button onclick="selectModel('Ather 450S', 0.75)" class="model-btn px-3 py-2 rounded-xl text-xs font-semibold border border-gray-800 bg-ather-panel text-gray-300 hover:border-gray-700 text-left flex items-center justify-between">
+                  <span>450S</span>
+                </button>
+                <button onclick="selectModel('Ather Rizta Z', 0.95)" class="model-btn px-3 py-2 rounded-xl text-xs font-semibold border border-gray-800 bg-ather-panel text-gray-300 hover:border-gray-700 text-left flex items-center justify-between">
+                  <span>Rizta Z</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Battery Gauge & Slider -->
+            <div class="bg-ather-bg/80 rounded-xl p-4 border border-gray-800/90 mb-4">
+              <div class="flex items-baseline justify-between mb-2">
+                <div>
+                  <span class="text-xs text-gray-400 block">Current Battery (SoC)</span>
+                  <span id="battery-pct-display" class="text-4xl font-extrabold font-mono text-red-500">7%</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs text-gray-400 block">Est. TrueRange™</span>
+                  <span id="range-display" class="text-2xl font-bold font-mono text-white">5.9 <span class="text-sm font-normal text-gray-400">km</span></span>
+                </div>
+              </div>
+
+              <!-- Visual Battery Bar -->
+              <div class="w-full h-3 bg-gray-800 rounded-full overflow-hidden mb-3 p-0.5">
+                <div id="battery-bar-fill" class="h-full rounded-full bg-red-500 transition-all duration-300" style="width: 7%"></div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                <span>Simulate Battery Level:</span>
+                <span class="font-mono text-gray-300">Drag Slider (1% - 100%)</span>
+              </div>
+              <input id="battery-slider" type="range" min="1" max="100" value="7" oninput="updateBattery(this.value)" class="w-full" />
+            </div>
+
+            <!-- Situation Summary Box -->
+            <div class="rounded-xl bg-ather-panel/80 p-3.5 border border-gray-800 text-xs space-y-2 mb-4">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-400"><i class="fa-solid fa-plug-circle-xmark text-red-400 mr-1.5"></i>Portable Charger:</span>
+                <span class="font-semibold text-red-300">Not Carried (Left at Home)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-400"><i class="fa-solid fa-charging-station text-sky-400 mr-1.5"></i>Nearest Ather Grid:</span>
+                <span class="font-mono text-gray-200">6.8 km away (Indiranagar)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-400"><i class="fa-solid fa-house-signal text-ather-mint mr-1.5"></i>Closest Home Host:</span>
+                <span class="font-mono text-ather-mint font-bold">0.6 km away (2 mins)</span>
+              </div>
+            </div>
+
+            <!-- One-Tap Broadcast Emergency SOS Button -->
+            <button id="sos-btn" onclick="triggerEmergencySOS()" class="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white shadow-lg shadow-red-600/30 transition flex items-center justify-center gap-2.5">
+              <i class="fa-solid fa-tower-broadcast animate-pulse"></i>
+              <span id="sos-btn-text">BROADCAST EMERGENCY SOS PING</span>
+            </button>
+          </div>
+
+          <!-- Transparent ₹150 Split Tariff Explainer Card -->
+          <div class="bg-ather-card rounded-2xl p-5 border border-gray-800">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono uppercase tracking-wider text-ather-mint font-semibold">COMMUNITY RESCUE TARIFF</span>
+              <span class="px-2 py-0.5 rounded bg-ather-mint/15 text-ather-mint font-mono text-xs font-bold">Flat ₹150</span>
+            </div>
+            <p class="text-xs text-gray-400 mb-4">
+              No haggling during an emergency. Pay a flat <strong class="text-white">₹150</strong> for a 45-minute rescue top-up (~35 km range added) at any verified Ather owner's house.
+            </p>
+            <div class="grid grid-cols-2 gap-2.5 text-center">
+              <div class="p-3 rounded-xl bg-ather-panel border border-gray-800">
+                <div class="text-xs text-gray-400 mb-0.5">Host Homeowner Gets</div>
+                <div class="text-xl font-extrabold font-mono text-ather-mint">₹140</div>
+                <div class="text-[10px] text-gray-400">Covers power + reward</div>
+              </div>
+              <div class="p-3 rounded-xl bg-ather-panel border border-gray-800">
+                <div class="text-xs text-gray-400 mb-0.5">App Developer Cut</div>
+                <div class="text-xl font-extrabold font-mono text-sky-400">₹10</div>
+                <div class="text-[10px] text-gray-400">6.67% Platform Fee</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: INTERACTIVE PROXIMITY RADAR & NEARBY HOSTS LIST (8 Cols) -->
+        <div class="lg:col-span-8 space-y-5">
+
+          <!-- Interactive Radar + Filter Controls Card -->
+          <div class="bg-ather-card rounded-2xl p-5 border border-gray-800">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-ather-mint animate-ping"></span>
+                  <h3 class="font-bold text-white text-base sm:text-lg">Live Proximity Charger Radar — HSR / Koramangala Sector</h3>
+                </div>
+                <p class="text-xs text-gray-400">Tap any radar node or host card below to message, preview route, or unlock charger for ₹150</p>
+              </div>
+
+              <!-- Search Radius Slider -->
+              <div class="bg-ather-panel px-3.5 py-2 rounded-xl border border-gray-800 flex items-center gap-3">
+                <div class="text-xs">
+                  <span class="text-gray-400">Scan Radius:</span>
+                  <span id="radius-label" class="font-mono font-bold text-ather-mint ml-1">5.0 km</span>
+                </div>
+                <input id="radius-slider" type="range" min="0.5" max="15" step="0.5" value="5.0" oninput="updateRadius(this.value)" class="w-28 sm:w-36" />
+              </div>
+            </div>
+
+            <!-- RADAR VISUALIZER CANVAS BOX -->
+            <div class="relative w-full h-72 sm:h-80 rounded-2xl bg-[#070A0D] border border-gray-800 overflow-hidden flex items-center justify-center select-none">
+              <!-- Subtle Map Grid Lines -->
+              <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#00D59D 1px, transparent 1px), linear-gradient(to right, #1E293B 1px, transparent 1px), linear-gradient(to bottom, #1E293B 1px, transparent 1px); background-size: 28px 28px;"></div>
+
+              <!-- Concentric Radar Rings -->
+              <div class="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border border-ather-mint/25 flex items-center justify-center">
+                <div class="w-44 h-44 sm:w-52 sm:h-52 rounded-full border border-ather-mint/20 flex items-center justify-center">
+                  <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-ather-mint/25"></div>
+                </div>
+
+                <!-- Rotating Radar Sweep -->
+                <div id="radar-sweep-cone" class=" absolute inset-0 rounded-full radar-sweep pointer-events-none"></div>
+
+                <!-- Crosshairs -->
+                <div class="absolute inset-x-0 h-px bg-ather-mint/15 pointer-events-none"></div>
+                <div class="absolute inset-y-0 w-px bg-ather-mint/15 pointer-events-none"></div>
+
+                <!-- Center Rider Marker (You) -->
+                <div class="relative z-20 w-9 h-9 rounded-full bg-red-600 text-white border-2 border-white flex items-center justify-center shadow-lg pulse-ring" title="Your Location (Stranded Rider)">
+                  <i class="fa-solid fa-motorcycle text-xs"></i>
+                </div>
+
+                <!-- Dynamic Host Nodes Injected via JS -->
+                <div id="radar-nodes-container" class="absolute inset-0"></div>
+              </div>
+
+              <!-- Radar Legend Overlay -->
+              <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none text-[11px]">
+                <div class="flex flex-wrap items-center gap-3 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl border border-gray-800">
+                  <span class="flex items-center gap-1.5 text-gray-300"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> You (<span id="radar-you-soc">7%</span>)</span>
+                  <span class="flex items-center gap-1.5 text-gray-300"><span class="w-2.5 h-2.5 rounded-full bg-ather-mint inline-block"></span> Home Host (₹150)</span>
+                  <span class="flex items-center gap-1.5 text-gray-300"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Public Ather Grid</span>
+                </div>
+                <div id="radar-status-pill" class="bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl border border-gray-800 font-mono text-ather-mint">
+                  <span id="visible-hosts-count">5</span> Chargers in Range
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Pills -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-4">
+              <div class="flex flex-wrap items-center gap-2">
+                <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-ather-mint text-black transition">
+                  All Nearby
+                </button>
+                <button onclick="setFilter('dot')" id="filter-dot" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-ather-panel text-gray-300 border border-gray-800 hover:border-gray-700 transition">
+                  <i class="fa-solid fa-bolt text-ather-mint mr-1"></i>Ather Dot Wallbox (3.3kW)
+                </button>
+                <button onclick="setFilter('portable')" id="filter-portable" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-ather-panel text-gray-300 border border-gray-800 hover:border-gray-700 transition">
+                  <i class="fa-solid fa-plug text-amber-400 mr-1"></i>Portable Charger
+                </button>
+              </div>
+              <span class="text-xs text-gray-400 font-mono">Sorted by: Nearest Distance</span>
+            </div>
+          </div>
+
+          <!-- NEARBY VERIFIED HOSTS LIST -->
+          <div id="hosts-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Populated dynamically via JS -->
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: HOST DASHBOARD MODE                -->
+    <!-- ========================================== -->
+    <section id="view-host" class="hidden space-y-6">
+      <!-- Host Top Banner & Availability Toggle -->
+      <div class="bg-ather-card rounded-2xl p-6 border border-gray-800 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-ather-mint/15 border border-ather-mint/40 flex items-center justify-center text-ather-mint text-2xl">
+            <i class="fa-solid fa-house-laptop"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-bold text-white">Residential Host Console — Indiranagar / HSR</h2>
+              <span class="px-2 py-0.5 text-[11px] font-mono rounded-full bg-ather-mint/20 text-ather-mint border border-ather-mint/30">Verified Ather Owner</span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-400">Share your home Ather Dot or Portable charger with stranded riders & earn <strong class="text-ather-mint font-mono">₹140 net</strong> per ₹150 session.</p>
+          </div>
+        </div>
+
+        <!-- Online / Offline Switch -->
+        <div class="flex items-center gap-4 bg-ather-panel p-3 rounded-2xl border border-gray-800">
+          <div class="text-right">
+            <div id="host-status-label" class="text-xs font-bold text-ather-mint uppercase font-mono">ONLINE & ACCEPTING SOS</div>
+            <div class="text-[11px] text-gray-400">Visible on Rider Radar within 5 km</div>
+          </div>
+          <button id="host-toggle-btn" onclick="toggleHostOnline()" class="w-14 h-8 rounded-full bg-ather-mint p-1 transition-all flex items-center justify-end">
+            <span class="w-6 h-6 rounded-full bg-black shadow-md transition-all"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Host KPI Metrics Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-ather-card p-5 rounded-2xl border border-gray-800">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Net Host Earnings (₹140/session)</span>
+            <i class="fa-solid fa-indian-rupee-sign text-ather-mint"></i>
+          </div>
+          <div id="host-wallet-balance" class="text-3xl font-extrabold font-mono text-ather-mint">₹1,260</div>
+          <div class="text-[11px] text-gray-400 mt-1">From <span id="host-sessions-count" class="font-mono text-white font-semibold">9</span> completed rescues (₹10/tx fee deducted)</div>
+        </div>
+
+        <div class="bg-ather-card p-5 rounded-2xl border border-gray-800">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Electricity Cost vs. Profit</span>
+            <i class="fa-solid fa-chart-line text-sky-400"></i>
+          </div>
+          <div class="text-3xl font-extrabold font-mono text-white">~₹124 <span class="text-xs font-normal text-ather-mint">/rescue profit</span></div>
+          <div class="text-[11px] text-gray-400 mt-1">Avg 2.1 kWh shared (~₹16 BESCOM power cost)</div>
+        </div>
+
+        <div class="bg-ather-card p-5 rounded-2xl border border-gray-800">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Total Energy Shared</span>
+            <i class="fa-solid fa-bolt text-amber-400"></i>
+          </div>
+          <div id="host-kwh-shared" class="text-3xl font-extrabold font-mono text-white">19.4 <span class="text-sm font-normal text-gray-400">kWh</span></div>
+          <div class="text-[11px] text-gray-400 mt-1">~580 km of emergency range gifted</div>
+        </div>
+
+        <div class="bg-ather-card p-5 rounded-2xl border border-gray-800">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Community Karma Score</span>
+            <i class="fa-solid fa-award text-purple-400"></i>
+          </div>
+          <div id="host-karma-points" class="text-3xl font-extrabold font-mono text-purple-400">950 <span class="text-sm font-normal text-gray-400">pts</span></div>
+          <div class="text-[11px] text-gray-400 mt-1">Grid Guardian Tier • 4.95★ Rating</div>
+        </div>
+      </div>
+
+      <!-- Incoming SOS Pings & Hardware Config -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Incoming Rider SOS Queue (7 Cols) -->
+        <div class="lg:col-span-7 bg-ather-card rounded-2xl p-5 border border-gray-800 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-white text-base flex items-center gap-2">
+                <i class="fa-solid fa-satellite-dish text-ather-danger animate-pulse"></i>
+                <span>Live Incoming Rider SOS Requests</span>
+              </h3>
+              <p class="text-xs text-gray-400">Accepting a request reserves your home charger and credits ₹140 to your Host Wallet</p>
+            </div>
+            <button onclick="simulateIncomingHostRequest()" class="px-3 py-1.5 rounded-xl bg-ather-panel border border-gray-700 hover:border-ather-mint text-xs font-semibold text-ather-mint transition">
+              + Simulate Rider Ping
+            </button>
+          </div>
+
+          <div id="host-requests-container" class="space-y-3">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Home Charger Setup & Access Rules (5 Cols) -->
+        <div class="lg:col-span-5 bg-ather-card rounded-2xl p-5 border border-gray-800 space-y-4">
+          <h3 class="font-bold text-white text-base">My Home Charger Configuration</h3>
+          <div class="space-y-3 text-xs">
+            <div class="p-3.5 rounded-xl bg-ather-panel border border-gray-800 flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-white">Installed Hardware</div>
+                <div class="text-gray-400">Ather Dot (3.3kW Wallbox) + 15A Socket</div>
+              </div>
+              <span class="px-2.5 py-1 rounded bg-ather-mint/15 text-ather-mint font-mono font-bold">ACTIVE</span>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-ather-panel border border-gray-800 flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-white">Fixed Session Price (App Enforced)</div>
+                <div class="text-gray-400">₹150 Total → ₹140 Host Payout + ₹10 App Fee</div>
+              </div>
+              <span class="font-mono font-bold text-white text-sm">₹150</span>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-ather-panel border border-gray-800">
+              <div class="font-semibold text-white mb-1">Parking & Gate Instructions (Sent on Match)</div>
+              <p class="text-gray-400">"Ground floor covered stilt parking, Pillar #4. Tell security guard you are visiting Flat 102 for Ather EV charging."</p>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-ather-mint/10 border border-ather-mint/30 flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-ather-mint">Auto-Payout UPI ID</div>
+                <div class="font-mono text-gray-300">atherhost.blr@okaxis</div>
+              </div>
+              <span class="text-[11px] font-mono text-ather-mint underline cursor-pointer" onclick="showToast('Host UPI ID verified with instant split settlement!')">Verified ✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: DEVELOPER COMMISSION WALLET        -->
+    <!-- ========================================== -->
+    <section id="view-dev" class="hidden space-y-6">
+      <!-- Developer Banner -->
+      <div class="bg-gradient-to-r from-ather-card via-ather-panel to-ather-card rounded-2xl p-6 border border-ather-mint/40 mint-glow flex flex-wrap items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono uppercase bg-ather-mint text-black font-bold">APP FOUNDER & DEVELOPER CONSOLE</span>
+            <span class="text-xs font-mono text-gray-400">Auto-Split Escrow Active</span>
+          </div>
+          <h2 class="text-2xl font-extrabold text-white">Platform Commission & Split Ledger</h2>
+          <p class="text-xs sm:text-sm text-gray-300">
+            Every time a rider pays <strong class="text-white">₹150</strong> to charge at a host's house, <strong class="text-ather-mint">₹140</strong> is routed to the Host and <strong class="text-sky-400">₹10</strong> is credited directly to your Developer Wallet.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <button onclick="simulateNew150Transaction()" class="px-4 py-2.5 rounded-xl bg-ather-mint hover:bg-ather-mintDark text-black font-bold text-xs sm:text-sm transition flex items-center gap-2 shadow-lg">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Simulate ₹150 Charge (+₹10 Cut)</span>
+          </button>
+          <button onclick="withdrawDevCommission()" class="px-4 py-2.5 rounded-xl bg-ather-bg hover:bg-gray-900 text-white border border-gray-700 font-semibold text-xs sm:text-sm transition flex items-center gap-2">
+            <i class="fa-solid fa-building-columns text-ather-mint"></i>
+            <span>Withdraw to Bank / UPI</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Developer Revenue KPIs -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-ather-card p-5 rounded-2xl border border-ather-mint/40">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Your Available Dev Commission</span>
+            <span class="px-2 py-0.5 rounded bg-ather-mint/20 text-ather-mint font-mono text-[10px]">+₹10 / tx</span>
+          </div>
+          <div id="dev-wallet-balance" class="text-4xl font-extrabold font-mono text-ather-mint">₹140</div>
+          <div class="text-[11px] text-gray-400 mt-1">Ready for instant UPI transfer</div>
+        </div>
+
+        <div class="bg-ather-card p-5 rounded-2xl border border-gray-800">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Gross Transaction Volume (GTV)</span>
+            <i class="fa-solid fa-sack-dollar text-sky-400"></i>
+          </div>
+          <div id="dev-gtv" class="text-3xl font-extrabold font-mono text-white">₹2,100</div>
+          <div class="text-[11px] text-gray-400 mt-1">Across <span id="dev-tx-count" class="text-white font-mono font-bold">14</span> P2P charging sessions</div>
+        </div>
+
+        <div class="bg-ather-card p-5 rounded-2xl border border-gray-800">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Total Settled to Hosts (₹140/tx)</span>
+            <i class="fa-solid fa-house-circle-check text-amber-400"></i>
+          </div>
+          <div id="dev-host-total" class="text-3xl font-extrabold font-mono text-white">₹1,960</div>
+          <div class="text-[11px] text-gray-400 mt-1">93.33% Payout Ratio to Community</div>
+        </div>
+
+        <div class="bg-ather-card p-5 rounded-2xl border border-gray-800">
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Projected Scale (500 Sessions/Day)</span>
+            <i class="fa-solid fa-rocket text-purple-400"></i>
+          </div>
+          <div class="text-3xl font-extrabold font-mono text-purple-400">₹1.5L <span class="text-xs font-normal text-gray-400">/mo</span></div>
+          <div class="text-[11px] text-gray-400 mt-1">500 daily rescues × ₹10 = ₹5,000/day</div>
+        </div>
+      </div>
+
+      <!-- Live Split Transaction Ledger Table -->
+      <div class="bg-ather-card rounded-2xl border border-gray-800 overflow-hidden">
+        <div class="p-5 border-b border-gray-800 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="font-bold text-white text-base">Live P2P Charging Split Ledger (₹150 = ₹140 Host + ₹10 Developer)</h3>
+            <p class="text-xs text-gray-400">Real-time breakdown of every emergency charging session settled through AtherShare</p>
+          </div>
+          <span class="text-xs font-mono text-ather-mint bg-ather-mint/10 px-3 py-1 rounded-lg border border-ather-mint/20">
+            UPI Split Protocol v2.4
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-gray-800 text-[11px] font-mono uppercase text-gray-400 bg-ather-panel/60">
+                <th class="py-3.5 px-4">Tx ID & Time</th>
+                <th class="py-3.5 px-4">Rider (Scooter)</th>
+                <th class="py-3.5 px-4">Host (Charger Owner)</th>
+                <th class="py-3.5 px-4">Rider Paid</th>
+                <th class="py-3.5 px-4">Host Share (93.3%)</th>
+                <th class="py-3.5 px-4">Your Cut (Dev Fee)</th>
+                <th class="py-3.5 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-tbody" class="divide-y divide-gray-800/70 text-xs sm:text-sm">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 1: ₹150 ATHERPAY / UPI SPLIT CHECKOUT MODAL          -->
+  <!-- ========================================================= -->
+  <div id="checkout-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-ather-card border border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 relative animate-fadeIn">
+      <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-ather-mint/20 border border-ather-mint text-ather-mint flex items-center justify-center text-xl">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-ather-mint/15 text-ather-mint">ATHERPAY UPI SPLIT ESCROW</span>
+          <h3 class="text-lg font-bold text-white mt-0.5">Unlock Home Charger</h3>
+        </div>
+      </div>
+
+      <!-- Selected Host Details Summary -->
+      <div class="p-4 rounded-xl bg-ather-panel border border-gray-800 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span id="checkout-host-name" class="font-bold text-white text-sm">Karthik Rao</span>
+          <span id="checkout-host-dist" class="text-xs font-mono text-ather-mint">0.6 km • 2 mins</span>
+        </div>
+        <div id="checkout-host-hardware" class="text-xs text-gray-400">Ather Dot 3.3kW Wallbox • HSR Sector 2</div>
+      </div>
+
+      <!-- Transparent ₹150 Split Breakdown Receipt -->
+      <div class="bg-ather-bg rounded-xl p-4 border border-gray-800 space-y-2.5 text-xs sm:text-sm">
+        <div class="text-xs font-mono uppercase text-gray-400 mb-1">TRANSPARENT PAYMENT SPLIT</div>
+        <div class="flex items-center justify-between text-gray-300">
+          <span>Host Home Charger Fee (Direct to Host)</span>
+          <span class="font-mono font-bold text-ather-mint">₹140.00</span>
+        </div>
+        <div class="flex items-center justify-between text-gray-300">
+          <span>App Developer Commission (Platform Fee)</span>
+          <span class="font-mono font-bold text-sky-400">₹10.00</span>
+        </div>
+        <div class="border-t border-gray-800 pt-2.5 flex items-center justify-between text-base font-bold text-white">
+          <span>Total Payable Now</span>
+          <span class="font-mono text-xl text-ather-mint">₹150.00</span>
+        </div>
+      </div>
+
+      <!-- Payment Method Selector -->
+      <div class="space-y-2">
+        <label class="text-xs text-gray-400 block">Select Instant UPI App:</label>
+        <div class="grid grid-cols-3 gap-2 text-xs font-semibold">
+          <button onclick="selectUpiApp(this)" class="upi-btn py-2.5 px-3 rounded-xl border border-ather-mint bg-ather-mint/15 text-ather-mint flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-bolt"></i> AtherPay
+          </button>
+          <button onclick="selectUpiApp(this)" class="upi-btn py-2.5 px-3 rounded-xl border border-gray-800 bg-ather-panel text-gray-300 flex items-center justify-center gap-1.5">
+            <i class="fa-brands fa-google-pay text-base"></i> GPay
+          </button>
+          <button onclick="selectUpiApp(this)" class="upi-btn py-2.5 px-3 rounded-xl border border-gray-800 bg-ather-panel text-gray-300 flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-mobile-screen"></i> PhonePe
+          </button>
+        </div>
+      </div>
+
+      <button onclick="confirm150Payment()" class="w-full py-3.5 px-4 rounded-xl bg-ather-mint hover:bg-ather-mintDark text-black font-extrabold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-ather-mint/25">
+        <i class="fa-solid fa-lock-open"></i>
+        <span>Pay ₹150 & Start Charging Session</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 2: LIVE CHAT & TURN-BY-TURN ROUTE NAVIGATION MODAL   -->
+  <!-- ========================================================= -->
+  <div id="coord-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-ather-card border border-gray-700 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="p-4 bg-ather-panel border-b border-gray-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-ather-mint/20 border border-ather-mint/40 text-ather-mint flex items-center justify-center font-bold" id="coord-host-avatar">
+            KR
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="coord-host-name" class="font-bold text-white text-base">Karthik Rao</h3>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-ather-mint/15 text-ather-mint">₹150 Session</span>
+            </div>
+            <p id="coord-host-sub" class="text-xs text-gray-400">Ather Dot 3.3kW • 0.6 km away (2 mins ETA)</p>
+          </div>
+        </div>
+        <button onclick="closeCoordModal()" class="w-8 h-8 rounded-lg bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body: Split into Route Preview & Live Chat -->
+      <div class="grid grid-cols-1 md:grid-cols-12 flex-1 overflow-y-auto">
+
+        <!-- Turn-by-Turn Route Preview (5 Cols) -->
+        <div class="md:col-span-5 p-4 bg-ather-bg/70 border-b md:border-b-0 md:border-r border-gray-800 flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono uppercase text-ather-mint font-bold">TURN-BY-TURN ROUTE</span>
+              <span id="route-soc-arrival" class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">Arrive w/ 5% SoC</span>
+            </div>
+
+            <!-- Simulated Mini Route SVG Map -->
+            <div class="relative h-36 rounded-xl bg-[#0D131A] border border-gray-800 p-3 flex items-center justify-center overflow-hidden">
+              <svg viewBox="0 0 240 110" class="w-full h-full">
+                <!-- Roads -->
+                <path d="M 20 90 L 90 90 L 130 35 L 215 35" fill="none" stroke="#1F2937" stroke-width="10" stroke-linecap="round" />
+                <!-- Active Mint Navigation Path -->
+                <path d="M 20 90 L 90 90 L 130 35 L 215 35" fill="none" stroke="#00D59D" stroke-width="4" stroke-dasharray="6 4" stroke-linecap="round" />
+                <!-- Rider Origin Dot -->
+                <circle cx="20" cy="90" r="6" fill="#FF3B30" />
+                <!-- Host Destination Dot -->
+                <circle cx="215" cy="35" r="7" fill="#00D59D" />
+              </svg>
+              <div class="absolute bottom-2 left-2 text-[10px] font-mono bg-black/70 px-2 py-0.5 rounded text-red-400">You</div>
+              <div class="absolute top-2 right-2 text-[10px] font-mono bg-black/70 px-2 py-0.5 rounded text-ather-mint">Host Charger</div>
+            </div>
+
+            <!-- Step-by-Step Directions -->
+            <div class="space-y-2 text-xs">
+              <div class="flex items-start gap-2.5 p-2 rounded-lg bg-ather-panel/70">
+                <i class="fa-solid fa-turn-up text-ather-mint mt-0.5"></i>
+                <div>
+                  <div class="text-white font-medium">Head East on 27th Main Rd</div>
+                  <div class="text-[11px] text-gray-400">350 meters • Keep in Eco / SmartEco Mode</div>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5 p-2 rounded-lg bg-ather-panel/70">
+                <i class="fa-solid fa-turn-right text-ather-mint mt-0.5"></i>
+                <div>
+                  <div class="text-white font-medium">Turn right at 14th Cross Residential Gate</div>
+                  <div class="text-[11px] text-gray-400" id="route-dest-note">House #42, Greenage Villa Stilt Parking</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="openCheckoutFromCoord()" class="w-full py-2.5 px-3 rounded-xl bg-ather-mint text-black font-bold text-xs hover:bg-ather-mintDark transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-bolt"></i> Pay ₹150 & Unlock This Charger
+          </button>
+        </div>
+
+        <!-- Live Chat Box with Preset Messages (7 Cols) -->
+        <div class="md:col-span-7 p-4 flex flex-col justify-between h-96 md:h-auto">
+          <div id="chat-messages" class="space-y-3 overflow-y-auto pr-1 flex-1 max-h-60">
+            <!-- Chat messages injected via JS -->
+          </div>
+
+          <!-- One-Tap Quick Preset Replies -->
+          <div class="mt-3 pt-3 border-t border-gray-800 space-y-2">
+            <div class="text-[10px] font-mono uppercase text-gray-400">ONE-TAP QUICK MESSAGES:</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="sendQuickChat('On my way! Running at 6% battery, reaching in 2 mins.')" class="text-[11px] px-2.5 py-1 rounded-lg bg-ather-panel hover:bg-gray-800 text-gray-200 border border-gray-700 transition">
+                🛵 On my way, 6% battery!
+              </button>
+              <button onclick="sendQuickChat('Is your Ather Dot socket accessible right now?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-ather-panel hover:bg-gray-800 text-gray-200 border border-gray-700 transition">
+                🔌 Is charger ready?
+              </button>
+              <button onclick="sendQuickChat('I have reached outside your gate. Sending ₹150 via AtherPay!')" class="text-[11px] px-2.5 py-1 rounded-lg bg-ather-panel hover:bg-gray-800 text-gray-200 border border-gray-700 transition">
+                📍 Reached gate, paying ₹150
+              </button>
+            </div>
+
+            <!-- Custom Message Input -->
+            <form onsubmit="handleChatSubmit(event)" class="flex items-center gap-2 pt-1">
+              <input id="chat-input" type="text" placeholder="Message host..." class="flex-1 bg-ather-bg border border-gray-800 focus:border-ather-mint rounded-xl px-3 py-2 text-xs text-white outline-none" />
+              <button type="submit" class="px-3.5 py-2 rounded-xl bg-ather-mint text-black font-bold text-xs hover:bg-ather-mintDark transition">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- NON-BLOCKING TOAST NOTIFICATION -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- ========================================================= -->
+  <!-- APPLICATION LOGIC & INTERACTIVE STATE                     -->
+  <!-- ========================================================= -->
+  <script>
+    // --- APPLICATION STATE ---
+    let currentMode = 'rider';
+    let currentModel = 'Ather 450X';
+    let rangeMultiplier = 0.85; // km per 1% SoC
+    let batterySoC = 7;
+    let scanRadiusKm = 5.0;
+    let activeFilter = 'all';
+    let soundEnabled = true;
+    let hostOnline = true;
+
+    // Financial & Split Wallets (₹150 Session = ₹140 Host + ₹10 App Developer)
+    let devWalletBalance = 140; // Starts with 14 past sessions = ₹140
+    let totalTransactions = 14;
+    let hostWalletBalance = 1260; // 9 sessions * ₹140
+    let hostSessionsCount = 9;
+    let hostKwhShared = 19.4;
+    let hostKarma = 950;
+
+    let selectedHost = null;
+    let chargingTimerInterval = null;
+    let chargingSeconds = 45;
+    let chargingKwh = 0.42;
+
+    // Nearby Residential Hosts & Public Grid Dataset
+    const nearbyChargers = [
+      {
+        id: 'host-1',
+        name: 'Karthik Rao',
+        initials: 'KR',
+        type: 'dot',
+        hardware: 'Ather Dot (3.3kW Fast Home Wallbox)',
+        area: 'HSR Layout Sector 2 • House #42',
+        distanceKm: 0.6,
+        etaMins: 2,
+        rating: 4.96,
+        rescues: 34,
+        price: 150,
+        hostShare: 140,
+        devShare: 10,
+        angleDeg: 38,
+        verified: true,
+        isGrid: false,
+        note: 'Ground floor stilt parking near gate. Security knows Ather riders.'
+      },
+      {
+        id: 'host-2',
+        name: 'Priya Nair',
+        initials: 'PN',
+        type: 'dot',
+        hardware: 'Ather Dot (3.3kW Wallbox) + Shade',
+        area: 'Koramangala 4th Block • 12th Main',
+        distanceKm: 1.4,
+        etaMins: 4,
+        rating: 4.92,
+        rescues: 21,
+        price: 150,
+        hostShare: 140,
+        devShare: 10,
+        angleDeg: 125,
+        verified: true,
+        isGrid: false,
+        note: 'Independent house driveway socket. Plug in anytime.'
+      },
+      {
+        id: 'host-3',
+        name: 'Rohan Deshmukh',
+        initials: 'RD',
+        type: 'portable',
+        hardware: 'Ather Portable Charger (15A Smart Plug)',
+        area: 'Agara Lake / Sarjapur Main Rd Cross',
+        distanceKm: 2.3,
+        etaMins: 7,
+        rating: 4.88,
+        rescues: 15,
+        price: 150,
+        hostShare: 140,
+        devShare: 10,
+        angleDeg: 215,
+        verified: true,
+        isGrid: false,
+        note: 'Portable cable kept in security cabin for emergency riders.'
+      },
+      {
+        id: 'host-4',
+        name: 'Ananya Sharma',
+        initials: 'AS',
+        type: 'dot',
+        hardware: 'Ather Duo / Dot Home Charger',
+        area: 'BTM 2nd Stage • 7th Cross Villa',
+        distanceKm: 3.8,
+        etaMins: 11,
+        rating: 5.0,
+        rescues: 42,
+        price: 150,
+        hostShare: 140,
+        devShare: 10,
+        angleDeg: 295,
+        verified: true,
+        isGrid: false,
+        note: 'Free cold water while your Ather charges!'
+      },
+      {
+        id: 'grid-1',
+        name: 'Ather Grid — Third Wave Coffee',
+        initials: 'AG',
+        type: 'dot',
+        hardware: 'Official Public Ather Grid Fast Charger',
+        area: 'Indiranagar 100 Ft Road',
+        distanceKm: 6.8,
+        etaMins: 22,
+        rating: 4.75,
+        rescues: 410,
+        price: 0,
+        hostShare: 0,
+        devShare: 0,
+        angleDeg: 75,
+        verified: true,
+        isGrid: true,
+        note: 'WARNING: 6.8 km away — Exceeds your current 7% battery safe range!'
+      },
+      {
+        id: 'host-5',
+        name: 'Vikram Hegde',
+        initials: 'VH',
+        type: 'portable',
+        hardware: 'Ather Portable Charger + Extension',
+        area: 'Bellandur EcoSpace Backgate',
+        distanceKm: 8.4,
+        etaMins: 24,
+        rating: 4.85,
+        rescues: 12,
+        price: 150,
+        hostShare: 140,
+        devShare: 10,
+        angleDeg: 170,
+        verified: true,
+        isGrid: false,
+        note: 'Available 24/7 near Pillar B2.'
+      }
+    ];
+
+    // Incoming Host SOS Requests (for Host Mode)
+    let incomingSosRequests = [
+      {
+        id: 'sos-101',
+        riderName: 'Aditya Verma',
+        scooter: 'Ather 450X (Gen 3)',
+        soc: 5,
+        distance: '0.4 km away (1 min)',
+        timeAgo: 'Just now',
+        tariff: 150,
+        hostNet: 140,
+        devCut: 10
+      },
+      {
+        id: 'sos-102',
+        riderName: 'Meghana Kulkarni',
+        scooter: 'Ather Rizta Z',
+        soc: 8,
+        distance: '1.1 km away (3 mins)',
+        timeAgo: '2 mins ago',
+        tariff: 150,
+        hostNet: 140,
+        devCut: 10
+      }
+    ];
+
+    // Developer Commission Split Ledger
+    let splitLedger = [
+      { id: 'TX-9942', time: '2 mins ago', rider: 'Siddharth M (450X)', host: 'Karthik Rao', gross: 150, hostShare: 140, devShare: 10 },
+      { id: 'TX-9941', time: '19 mins ago', rider: 'Neha G (Rizta Z)', host: 'Priya Nair', gross: 150, hostShare: 140, devShare: 10 },
+      { id: 'TX-9940', time: '44 mins ago', rider: 'Varun K (450 Apex)', host: 'Ananya Sharma', gross: 150, hostShare: 140, devShare: 10 },
+      { id: 'TX-9939', time: '1 hr ago', rider: 'Deepak R (450S)', host: 'Rohan Deshmukh', gross: 150, hostShare: 140, devShare: 10 }
+    ];
+
+    // --- WEB AUDIO SYNTHESIZER (No external audio files required) ---
+    function playSynthBeep(freq = 680, duration = 0.12, type = 'sine') {
+      if (!soundEnabled) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        // Ignore audio context autoplay restrictions
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      icon.className = soundEnabled ? 'fa-solid fa-volume-high text-ather-mint' : 'fa-solid fa-volume-xmark text-gray-500';
+      showToast(soundEnabled ? 'Radar & SOS Audio Effects Enabled' : 'Audio Muted');
+    }
+
+    // --- MODE SWITCHING (Rider SOS / Host Mode / Dev Wallet) ---
+    function switchMode(mode) {
+      currentMode = mode;
+      ['rider', 'host', 'dev'].forEach(m => {
+        const view = document.getElementById(`view-${m}`);
+        const tab = document.getElementById(`tab-${m}`);
+        if (m === mode) {
+          view.classList.remove('hidden');
+          tab.className = 'flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-ather-mint text-black shadow';
+        } else {
+          view.classList.add('hidden');
+          tab.className = 'flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-gray-400 hover:text-white';
+        }
+      });
+      playSynthBeep(540, 0.08);
+    }
+
+    // --- SCOOTER MODEL & BATTERY TELEMETRY ---
+    function selectModel(modelName, mult) {
+      currentModel = modelName;
+      rangeMultiplier = mult;
+      document.getElementById('selected-model-title').textContent = modelName;
+
+      const btns = document.querySelectorAll('.model-btn');
+      btns.forEach(btn => {
+        if (btn.textContent.trim().includes(modelName.replace('Ather ', ''))) {
+          btn.className = 'model-btn px-3 py-2 rounded-xl text-xs font-semibold border border-ather-mint bg-ather-mint/15 text-ather-mint text-left flex items-center justify-between';
+          btn.innerHTML = `<span>${modelName.replace('Ather ', '')}</span><i class="fa-solid fa-check text-[10px]"></i>`;
+        } else {
+          const shortName = btn.textContent.trim();
+          btn.className = 'model-btn px-3 py-2 rounded-xl text-xs font-semibold border border-gray-800 bg-ather-panel text-gray-300 hover:border-gray-700 text-left flex items-center justify-between';
+          btn.innerHTML = `<span>${shortName}</span>`;
+        }
+      });
+
+      updateBattery(batterySoC);
+    }
+
+    function updateBattery(val) {
+      batterySoC = parseInt(val, 10);
+      const estRange = (batterySoC * rangeMultiplier).toFixed(1);
+
+      const pctDisplay = document.getElementById('battery-pct-display');
+      const rangeDisplay = document.getElementById('range-display');
+      const barFill = document.getElementById('battery-bar-fill');
+      const banner = document.getElementById('critical-banner');
+      const telemetryCard = document.getElementById('telemetry-card');
+      const socBadge = document.getElementById('soc-badge');
+      const radarSweep = document.getElementById('radar-sweep-cone');
+
+      pctDisplay.textContent = `${batterySoC}%`;
+      rangeDisplay.innerHTML = `${estRange} <span class="text-sm font-normal text-gray-400">km</span>`;
+      barFill.style.width = `${batterySoC}%`;
+      document.getElementById('radar-you-soc').textContent = `${batterySoC}%`;
+      document.getElementById('banner-soc').textContent = `${batterySoC}%`;
+      document.getElementById('banner-range').textContent = estRange;
+
+      if (batterySoC <= 10) {
+        pctDisplay.className = 'text-4xl font-extrabold font-mono text-red-500';
+        barFill.className = 'h-full rounded-full bg-red-500 transition-all duration-300';
+        banner.classList.remove('hidden');
+        telemetryCard.className = 'bg-ather-card rounded-2xl p-5 border border-red-500/50 danger-glow transition-all';
+        socBadge.className = 'px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-mono text-xs font-bold';
+        socBadge.textContent = 'CRITICAL SOS (<10%)';
+        radarSweep.className = 'absolute inset-0 rounded-full radar-sweep-sos pointer-events-none';
+      } else if (batterySoC <= 22) {
+        pctDisplay.className = 'text-4xl font-extrabold font-mono text-amber-400';
+        barFill.className = 'h-full rounded-full bg-amber-400 transition-all duration-300';
+        banner.classList.add('hidden');
+        telemetryCard.className = 'bg-ather-card rounded-2xl p-5 border border-amber-500/40 transition-all';
+        socBadge.className = 'px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold';
+        socBadge.textContent = 'LOW BATTERY';
+        radarSweep.className = 'absolute inset-0 rounded-full radar-sweep pointer-events-none';
+      } else {
+        pctDisplay.className = 'text-4xl font-extrabold font-mono text-ather-mint';
+        barFill.className = 'h-full rounded-full bg-ather-mint transition-all duration-300';
+        banner.classList.add('hidden');
+        telemetryCard.className = 'bg-ather-card rounded-2xl p-5 border border-gray-800 transition-all';
+        socBadge.className = 'px-2.5 py-1 rounded-lg bg-ather-mint/15 border border-ather-mint/30 text-ather-mint font-mono text-xs font-bold';
+        socBadge.textContent = 'OPTIMAL RANGE';
+        radarSweep.className = 'absolute inset-0 rounded-full radar-sweep pointer-events-none';
+      }
+
+      renderRadarAndHosts();
+    }
+
+    // --- RADAR & NEARBY HOST RENDERING ---
+    function updateRadius(val) {
+      scanRadiusKm = parseFloat(val);
+      document.getElementById('radius-label').textContent = `${scanRadiusKm.toFixed(1)} km`;
+      renderRadarAndHosts();
+    }
+
+    function setFilter(filterType) {
+      activeFilter = filterType;
+      ['all', 'dot', 'portable'].forEach(f => {
+        const btn = document.getElementById(`filter-${f}`);
+        if (f === filterType) {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-ather-mint text-black transition';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-ather-panel text-gray-300 border border-gray-800 hover:border-gray-700 transition';
+        }
+      });
+      renderRadarAndHosts();
+    }
+
+    function renderRadarAndHosts() {
+      const nodesContainer = document.getElementById('radar-nodes-container');
+      const cardsContainer = document.getElementById('hosts-list-container');
+      nodesContainer.innerHTML = '';
+      cardsContainer.innerHTML = '';
+
+      const estRangeKm = batterySoC * rangeMultiplier;
+
+      const filtered = nearbyChargers.filter(item => {
+        const withinRadius = item.distanceKm <= scanRadiusKm;
+        const matchesType = activeFilter === 'all' || item.type === activeFilter;
+        return withinRadius && matchesType;
+      });
+
+      document.getElementById('visible-hosts-count').textContent = filtered.length;
+
+      filtered.forEach(item => {
+        // 1. Create Radar Node Position (polar coordinates inside radar circle)
+        const ratio = Math.min(item.distanceKm / scanRadiusKm, 0.92);
+        const radiusPx = ratio * 115; // max radius in px
+        const rad = (item.angleDeg * Math.PI) / 180;
+        const xOffset = Math.cos(rad) * radiusPx;
+        const yOffset = Math.sin(rad) * radiusPx;
+
+        const nodeBtn = document.createElement('button');
+        nodeBtn.style.left = `calc(50% + ${xOffset}px - 16px)`;
+        nodeBtn.style.top = `calc(50% + ${yOffset}px - 16px)`;
+        nodeBtn.className = `absolute z-20 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg transition transform hover:scale-125 ${
+          item.isGrid
+            ? 'bg-sky-400 text-black border-2 border-white'
+            : 'bg-ather-mint text-black border-2 border-black pulse-ring'
+        }`;
+        nodeBtn.innerHTML = item.isGrid ? '<i class="fa-solid fa-charging-station"></i>' : '<i class="fa-solid fa-plug"></i>';
+        nodeBtn.title = `${item.name} (${item.distanceKm} km)`;
+        nodeBtn.onclick = () => item.isGrid ? showToast('Public Ather Grid is 6.8 km away! Pick a closer Home Host for ₹150.') : openCheckoutModal(item.id);
+        nodesContainer.appendChild(nodeBtn);
+
+        // 2. Create Host Card
+        const reachable = item.distanceKm <= estRangeKm;
+        const card = document.createElement('div');
+        card.className = `bg-ather-card rounded-2xl p-5 border transition-all flex flex-col justify-between ${
+          item.isGrid ? 'border-sky-500/30 opacity-85' : 'border-gray-800 hover:border-ather-mint/60'
+        }`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl ${item.isGrid ? 'bg-sky-400/20 text-sky-400 border-sky-400/40' : 'bg-ather-mint/15 text-ather-mint border-ather-mint/40'} border flex items-center justify-center font-bold text-sm">
+                  ${item.initials}
+                </div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <h4 class="font-bold text-white text-sm sm:text-base">${item.name}</h4>
+                    <i class="fa-solid fa-circle-check text-ather-mint text-xs" title="Verified Ather Owner"></i>
+                  </div>
+                  <p class="text-xs text-gray-400">${item.area}</p>
+                </div>
+              </div>
+
+              <div class="text-right">
+                <div class="font-mono font-extrabold text-base ${item.isGrid ? 'text-sky-400' : 'text-ather-mint'}">
+                  ${item.isGrid ? 'PUBLIC GRID' : '₹150'}
+                </div>
+                <div class="text-[10px] font-mono text-gray-400">
+                  ${item.isGrid ? 'Commercial' : '₹140 Host + ₹10 App'}
+                </div>
+              </div>
+            </div>
+
+            <!-- Charger Specs & Distance Badges -->
+            <div class="flex flex-wrap items-center gap-2 text-xs mb-3">
+              <span class="px-2.5 py-1 rounded-lg bg-ather-panel border border-gray-800 text-gray-200 font-medium">
+                <i class="fa-solid ${item.type === 'dot' ? 'fa-bolt text-ather-mint' : 'fa-plug text-amber-400'} mr-1"></i>${item.hardware}
+              </span>
+              <span class="px-2.5 py-1 rounded-lg bg-ather-panel border border-gray-800 font-mono text-white">
+                ${item.distanceKm} km • ${item.etaMins} mins
+              </span>
+              <span class="px-2 py-1 rounded-lg bg-ather-panel border border-gray-800 font-mono text-amber-400">
+                ★ ${item.rating} (${item.rescues})
+              </span>
+            </div>
+
+            <p class="text-xs text-gray-400 bg-ather-bg/60 p-2.5 rounded-xl border border-gray-800/80 mb-4">
+              "${item.note}"
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-2 border-t border-gray-800/80">
+            <span class="text-[11px] font-mono ${reachable ? 'text-emerald-400' : 'text-red-400'}">
+              <i class="fa-solid ${reachable ? 'fa-circle-check' : 'fa-triangle-exclamation'} mr-1"></i>
+              ${reachable ? 'Within Safe Battery Range' : 'Low Range Warning'}
+            </span>
+
+            <div class="flex items-center gap-2">
+              <button onclick="openCoordModal('${item.id}')" class="px-3 py-2 rounded-xl bg-ather-panel hover:bg-gray-800 text-gray-200 border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-route text-ather-mint"></i> Route & Chat
+              </button>
+              ${
+                !item.isGrid
+                  ? `<button onclick="openCheckoutModal('${item.id}')" class="px-3.5 py-2 rounded-xl bg-ather-mint hover:bg-ather-mintDark text-black font-bold text-xs transition flex items-center gap-1.5 shadow">
+                      <i class="fa-solid fa-bolt"></i> Pay ₹150
+                    </button>`
+                  : ''
+              }
+            </div>
+          </div>
+        `;
+        cardsContainer.appendChild(card);
+      });
+    }
+
+    // --- ONE-TAP EMERGENCY SOS BROADCAST ---
+    function triggerEmergencySOS() {
+      playSynthBeep(880, 0.18, 'triangle');
+      setTimeout(() => playSynthBeep(1040, 0.22, 'triangle'), 160);
+
+      const btn = document.getElementById('sos-btn');
+      const btnText = document.getElementById('sos-btn-text');
+      btnText.textContent = 'PINGING 4 VERIFIED HOSTS WITHIN 3 KM...';
+      btn.classList.add('animate-pulse');
+
+      showToast(`Broadcasting Emergency SOS for ${currentModel} (${batterySoC}% SoC)...`);
+
+      setTimeout(() => {
+        btn.classList.remove('animate-pulse');
+        btnText.textContent = 'MATCH FOUND: KARTHIK RAO (0.6 KM AWAY)';
+        showToast('Host Karthik Rao (0.6 km away) accepted your SOS! Opening Route & Chat...');
+        openCoordModal('host-1');
+      }, 1400);
+    }
+
+    // --- ₹150 ATHERPAY / UPI SPLIT CHECKOUT FLOW ---
+    function openCheckoutModal(hostId) {
+      selectedHost = nearbyChargers.find(h => h.id === hostId) || nearbyChargers[0];
+      document.getElementById('checkout-host-name').textContent = selectedHost.name;
+      document.getElementById('checkout-host-dist').textContent = `${selectedHost.distanceKm} km • ${selectedHost.etaMins} mins ETA`;
+      document.getElementById('checkout-host-hardware').textContent = `${selectedHost.hardware} • ${selectedHost.area}`;
+      document.getElementById('checkout-modal').classList.remove('hidden');
+      playSynthBeep(620, 0.1);
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById('checkout-modal').classList.add('hidden');
+    }
+
+    function selectUpiApp(btnEl) {
+      document.querySelectorAll('.upi-btn').forEach(b => {
+        b.className = 'upi-btn py-2.5 px-3 rounded-xl border border-gray-800 bg-ather-panel text-gray-300 flex items-center justify-center gap-1.5';
+      });
+      btnEl.className = 'upi-btn py-2.5 px-3 rounded-xl border border-ather-mint bg-ather-mint/15 text-ather-mint flex items-center justify-center gap-1.5';
+    }
+
+    function confirm150Payment() {
+      if (!selectedHost) selectedHost = nearbyChargers[0];
+      closeCheckoutModal();
+      closeCoordModal();
+
+      // Update Developer Commission (+₹10) & Host Payout (+₹140)
+      record150SplitTransaction(`You (${currentModel.replace('Ather ', '')})`, selectedHost.name);
+
+      // Show Live Charging Bar
+      document.getElementById('active-session-host').textContent = `Host: ${selectedHost.name}`;
+      document.getElementById('active-charging-bar').classList.remove('hidden');
+
+      playSynthBeep(780, 0.14);
+      setTimeout(() => playSynthBeep(980, 0.2, 'triangle'), 150);
+
+      showToast(`₹150 Paid! ₹140 credited to ${selectedHost.name} & ₹10 credited to your Developer Wallet.`);
+
+      // Start live charging simulation
+      if (chargingTimerInterval) clearInterval(chargingTimerInterval);
+      chargingTimerInterval = setInterval(() => {
+        chargingSeconds++;
+        chargingKwh = +(chargingKwh + 0.03).toFixed(2);
+        const mins = String(Math.floor(chargingSeconds / 60)).padStart(2, '0');
+        const secs = String(chargingSeconds % 60).padStart(2, '0');
+        document.getElementById('charge-timer').textContent = `${mins}:${secs}`;
+        document.getElementById('charge-kwh').textContent = chargingKwh.toFixed(2);
+
+        if (batterySoC < 80 && chargingSeconds % 4 === 0) {
+          updateBattery(batterySoC + 1);
+          document.getElementById('battery-slider').value = batterySoC;
+        }
+      }, 1000);
+    }
+
+    function stopChargingSession() {
+      if (chargingTimerInterval) clearInterval(chargingTimerInterval);
+      document.getElementById('active-charging-bar').classList.add('hidden');
+      showToast('Charging session completed! Thank you for using AtherShare.');
+    }
+
+    // --- ROUTE PREVIEW & LIVE CHAT MODAL ---
+    function openCoordModal(hostId) {
+      selectedHost = nearbyChargers.find(h => h.id === hostId) || nearbyChargers[0];
+      document.getElementById('coord-host-avatar').textContent = selectedHost.initials;
+      document.getElementById('coord-host-name').textContent = selectedHost.name;
+      document.getElementById('coord-host-sub').textContent = `${selectedHost.hardware} • ${selectedHost.distanceKm} km away (${selectedHost.etaMins} mins ETA)`;
+      document.getElementById('route-dest-note').textContent = selectedHost.area;
+
+      const arrivalSoC = Math.max(1, Math.round(batterySoC - selectedHost.distanceKm / rangeMultiplier));
+      document.getElementById('route-soc-arrival').textContent = `Arrive w/ ~${arrivalSoC}% SoC`;
+
+      // Seed Chat Messages
+      const chatBox = document.getElementById('chat-messages');
+      chatBox.innerHTML = `
+        <div class="flex items-start gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-ather-mint/20 text-ather-mint flex items-center justify-center text-xs font-bold shrink-0">${selectedHost.initials}</div>
+          <div class="bg-ather-panel border border-gray-800 rounded-2xl rounded-tl-none px-3.5 py-2.5 text-xs text-gray-200 max-w-xs">
+            <div class="font-semibold text-ather-mint mb-0.5">${selectedHost.name} (Verified Host)</div>
+            Hey fellow Ather rider! My home charger is online. ${selectedHost.note}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('coord-modal').classList.remove('hidden');
+    }
+
+    function closeCoordModal() {
+      document.getElementById('coord-modal').classList.add('hidden');
+    }
+
+    function openCheckoutFromCoord() {
+      closeCoordModal();
+      openCheckoutModal(selectedHost ? selectedHost.id : 'host-1');
+    }
+
+    function sendQuickChat(text) {
+      appendRiderMessage(text);
+    }
+
+    function handleChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      appendRiderMessage(msg);
+    }
+
+    function appendRiderMessage(msg) {
+      const chatBox = document.getElementById('chat-messages');
+      const riderDiv = document.createElement('div');
+      riderDiv.className = 'flex items-end justify-end gap-2';
+      riderDiv.innerHTML = `
+        <div class="bg-ather-mint text-black font-medium rounded-2xl rounded-tr-none px-3.5 py-2.5 text-xs max-w-xs shadow">
+          ${msg}
+        </div>
+      `;
+      chatBox.appendChild(riderDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      playSynthBeep(720, 0.06);
+
+      // Simulated Host Auto-Reply
+      setTimeout(() => {
+        const replyDiv = document.createElement('div');
+        replyDiv.className = 'flex items-start gap-2.5';
+        replyDiv.innerHTML = `
+          <div class="w-7 h-7 rounded-lg bg-ather-mint/20 text-ather-mint flex items-center justify-center text-xs font-bold shrink-0">${selectedHost ? selectedHost.initials : 'KR'}</div>
+          <div class="bg-ather-panel border border-gray-800 rounded-2xl rounded-tl-none px-3.5 py-2.5 text-xs text-gray-200 max-w-xs">
+            Got it! Gate is open and the Ather Dot cable is switched ON. Come right in! ⚡
+          </div>
+        `;
+        chatBox.appendChild(replyDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        playSynthBeep(560, 0.08);
+      }, 900);
+    }
+
+    // --- HOST DASHBOARD LOGIC ---
+    function toggleHostOnline() {
+      hostOnline = !hostOnline;
+      const btn = document.getElementById('host-toggle-btn');
+      const label = document.getElementById('host-status-label');
+      if (hostOnline) {
+        btn.className = 'w-14 h-8 rounded-full bg-ather-mint p-1 transition-all flex items-center justify-end';
+        label.textContent = 'ONLINE & ACCEPTING SOS';
+        label.className = 'text-xs font-bold text-ather-mint uppercase font-mono';
+        showToast('Your Home Charger is now ONLINE and visible to stranded Ather riders.');
+      } else {
+        btn.className = 'w-14 h-8 rounded-full bg-gray-700 p-1 transition-all flex items-center justify-start';
+        label.textContent = 'OFFLINE (HIDDEN)';
+        label.className = 'text-xs font-bold text-gray-400 uppercase font-mono';
+        showToast('Your Home Charger is now OFFLINE.');
+      }
+    }
+
+    function renderHostRequests() {
+      const container = document.getElementById('host-requests-container');
+      const badge = document.getElementById('host-ping-badge');
+      badge.textContent = incomingSosRequests.length;
+
+      if (incomingSosRequests.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 rounded-xl bg-ather-panel/40 border border-gray-800 text-center space-y-2">
+            <i class="fa-solid fa-circle-check text-ather-mint text-2xl"></i>
+            <div class="text-sm font-semibold text-white">All Nearby Stranded Riders Assisted!</div>
+            <p class="text-xs text-gray-400">Click "+ Simulate Rider Ping" above to test accepting a new ₹150 SOS request.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      incomingSosRequests.forEach(req => {
+        const div = document.createElement('div');
+        div.className = 'p-4 rounded-xl bg-ather-panel border border-gray-800 flex flex-wrap items-center justify-between gap-3';
+        div.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-mono font-bold text-[10px] border border-red-500/30">${req.soc}% SoC SOS</span>
+              <span class="font-bold text-white text-sm">${req.riderName}</span>
+              <span class="text-xs text-gray-400">• ${req.scooter}</span>
+            </div>
+            <div class="text-xs text-gray-400 flex items-center gap-3">
+              <span><i class="fa-solid fa-location-dot text-ather-mint mr-1"></i>${req.distance}</span>
+              <span>• Rider Pays: <strong class="text-white font-mono">₹150</strong></span>
+              <span class="text-ather-mint font-mono">(Your Net: ₹140 | App Fee: ₹10)</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="acceptHostRequest('${req.id}')" class="px-3.5 py-2 rounded-xl bg-ather-mint hover:bg-ather-mintDark text-black font-bold text-xs transition shadow">
+              Accept & Earn ₹140
+            </button>
+            <button onclick="declineHostRequest('${req.id}')" class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold transition">
+              Decline
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function acceptHostRequest(reqId) {
+      const req = incomingSosRequests.find(r => r.id === reqId);
+      incomingSosRequests = incomingSosRequests.filter(r => r.id !== reqId);
+
+      // Credit ₹140 to Host and ₹10 to Developer
+      record150SplitTransaction(`${req.riderName}`, 'You (Host)');
+      renderHostRequests();
+      playSynthBeep(840, 0.15, 'triangle');
+      showToast(`Accepted ${req.riderName}'s SOS! +₹140 credited to Host Wallet & +₹10 credited to Developer Wallet.`);
+    }
+
+    function declineHostRequest(reqId) {
+      incomingSosRequests = incomingSosRequests.filter(r => r.id !== reqId);
+      renderHostRequests();
+      showToast('Request routed to next nearest Ather host.');
+    }
+
+    function simulateIncomingHostRequest() {
+      const names = ['Raghavendra S', 'Sneha Menon', 'Kiran Kumar', 'Zoya Khan', 'Pranav Joshi'];
+      const scooters = ['Ather 450X', 'Ather Rizta Z', 'Ather 450 Apex', 'Ather 450S'];
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      const randomScooter = scooters[Math.floor(Math.random() * scooters.length)];
+      const randomSoc = Math.floor(Math.random() * 6) + 4;
+
+      incomingSosRequests.unshift({
+        id: 'sos-' + Date.now(),
+        riderName: randomName,
+        scooter: randomScooter,
+        soc: randomSoc,
+        distance: '0.8 km away (2 mins)',
+        timeAgo: 'Just now',
+        tariff: 150,
+        hostNet: 140,
+        devCut: 10
+      });
+      renderHostRequests();
+      playSynthBeep(760, 0.12);
+      showToast(`New SOS Ping from ${randomName} (${randomSoc}% battery)!`);
+    }
+
+    // --- DEVELOPER WALLET & ₹150 SPLIT LEDGER ENGINE ---
+    function record150SplitTransaction(riderLabel, hostLabel) {
+      totalTransactions += 1;
+      devWalletBalance += 10;
+      hostWalletBalance += 140;
+      hostSessionsCount += 1;
+      hostKwhShared = +(hostKwhShared + 2.2).toFixed(1);
+      hostKarma += 100;
+
+      const txId = 'TX-' + (9930 + totalTransactions);
+      splitLedger.unshift({
+        id: txId,
+        time: 'Just now',
+        rider: riderLabel,
+        host: hostLabel,
+        gross: 150,
+        hostShare: 140,
+        devShare: 10
+      });
+
+      updateAllFinancialDisplays();
+    }
+
+    function simulateNew150Transaction() {
+      const sampleRiders = ['Arjun N (450X)', 'Divya P (Rizta Z)', 'Nikhil B (450 Apex)', 'ishaan T (450S)'];
+      const sampleHosts = ['Karthik Rao', 'Priya Nair', 'Ananya Sharma', 'Rohan Deshmukh'];
+      const r = sampleRiders[Math.floor(Math.random() * sampleRiders.length)];
+      const h = sampleHosts[Math.floor(Math.random() * sampleHosts.length)];
+
+      record150SplitTransaction(r, h);
+      playSynthBeep(920, 0.14, 'triangle');
+      showToast(`Simulated ₹150 P2P Session! ₹140 sent to ${h} & +₹10 added to your Dev Wallet.`);
+    }
+
+    function withdrawDevCommission() {
+      if (devWalletBalance <= 0) {
+        showToast('Your Developer Commission balance is currently ₹0.');
+        return;
+      }
+      const amount = devWalletBalance;
+      devWalletBalance = 0;
+      updateAllFinancialDisplays();
+      playSynthBeep(880, 0.2, 'sine');
+      showToast(`₹${amount} Developer Commission transferred to your linked UPI account!`);
+    }
+
+    function updateAllFinancialDisplays() {
+      // Top Nav Badge & Dev Console
+      document.getElementById('nav-dev-balance').textContent = `₹${devWalletBalance}`;
+      document.getElementById('dev-wallet-balance').textContent = `₹${devWalletBalance.toLocaleString('en-IN')}`;
+      document.getElementById('dev-tx-count').textContent = totalTransactions;
+      document.getElementById('dev-gtv').textContent = `₹${(totalTransactions * 150).toLocaleString('en-IN')}`;
+      document.getElementById('dev-host-total').textContent = `₹${(totalTransactions * 140).toLocaleString('en-IN')}`;
+
+      // Host Console Metrics
+      document.getElementById('host-wallet-balance').textContent = `₹${hostWalletBalance.toLocaleString('en-IN')}`;
+      document.getElementById('host-sessions-count').textContent = hostSessionsCount;
+      document.getElementById('host-kwh-shared').innerHTML = `${hostKwhShared} <span class="text-sm font-normal text-gray-400">kWh</span>`;
+      document.getElementById('host-karma-points').innerHTML = `${hostKarma} <span class="text-sm font-normal text-gray-400">pts</span>`;
+
+      // Render Ledger Table
+      const tbody = document.getElementById('ledger-tbody');
+      tbody.innerHTML = '';
+      splitLedger.forEach(tx => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-ather-panel/40 transition';
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono text-xs text-gray-300">${tx.id} <span class="text-gray-500 block text-[10px]">${tx.time}</span></td>
+          <td class="py-3 px-4 font-medium text-white">${tx.rider}</td>
+          <td class="py-3 px-4 text-gray-300">${tx.host}</td>
+          <td class="py-3 px-4 font-mono font-bold text-white">₹${tx.gross}</td>
+          <td class="py-3 px-4 font-mono font-semibold text-ather-mint">₹${tx.hostShare}</td>
+          <td class="py-3 px-4 font-mono font-bold text-sky-400">+₹${tx.devShare}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-ather-mint/15 text-ather-mint border border-ather-mint/30">SPLIT SETTLED</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- TOAST NOTIFICATION HELPER ---
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto bg-ather-panel border border-ather-mint/50 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-medium transition-all';
+      toast.innerHTML = `
+        <div class="w-6 h-6 rounded-lg bg-ather-mint/20 text-ather-mint flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3600);
+    }
+
+    // --- INITIALIZE ON LOAD ---
+    window.onload = function () {
+      updateBattery(7);
+      renderHostRequests();
+      updateAllFinancialDisplays();
+    };
+  </script>
+</body>
+</html>
